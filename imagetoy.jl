@@ -83,7 +83,12 @@ upsidedown_dragon = dragons[end:-1:1, :]
 ]
 
 # ╔═╡ 9ad2cd7b-afdd-4cf3-9d20-9be21e9a974c
-[RGB(k, i, j) for i in 0:0.1:1, j in 0:0.1:1, k in 0:0.1:1]
+begin
+	plotly() # for interactivity
+	x = [(i, j, k) for i in 0:0.1:1 for j in 0:0.1:1 for k in 0:0.1:1];
+	plot(x; st=:scatter, color=[RGB(a...) for a in x], xguide="R", yguide="G", zguide="B", label=nothing)
+	
+end
 
 # ╔═╡ 1033ad9f-6720-4e5b-b0dc-4e49f4e58d43
 begin
