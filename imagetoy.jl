@@ -25,8 +25,9 @@ end
 
 # ╔═╡ ac6d7ea0-8170-11ec-2320-63e980786867
 md"""
-### Bring the image
-_find the url of the image that you want to take and paste!_
+### Image transformations
+_We are going to play with an image in several ways!_
+Don't forget that you can do so called indexing.
 """
 
 # ╔═╡ c4e64bef-a72a-4c4d-a50a-4e3c217bfc6c
@@ -42,7 +43,7 @@ dragons = load(dragon)
 typeof(dragons)
 
 # ╔═╡ 49193149-436d-40b8-9516-c46a51d55148
-size(dragons)
+size(dragons) # number of pixels in rows and columns
 
 # ╔═╡ fe9e36d0-dd60-4bea-83d7-330c6ae51b13
 md"""
@@ -90,6 +91,11 @@ begin
 	
 end
 
+# ╔═╡ f520720c-cfdf-4003-9bc6-5d1c6f7863d8
+md"""
+Some experimental codes for edge detection. You can see the little differences.
+"""
+
 # ╔═╡ 1033ad9f-6720-4e5b-b0dc-4e49f4e58d43
 begin
 	Δx = [1 0 -1; 1 0 -1; 1 0 -1]/2
@@ -109,6 +115,14 @@ Gray.(2 .* (imfilter(dragons, OffsetArray(Δy, -1:1, -1:1))))
 
 # ╔═╡ b5529ade-62f5-492a-91b8-5b10b4c9eb52
 Gray.(2 .* (imfilter(dragons, OffsetArray(∇y, -1:1, -1:1))))
+
+# ╔═╡ b58fdb86-34af-4d42-bc73-f4c0498aa3d6
+md"""
+###### Now let's play the image with filtering. (convolutions)
+- Gaussian blur (probability of the center must be the highest.)
+- Edge detect
+- Sharpening
+"""
 
 # ╔═╡ e5d2a112-635c-4f76-a55a-3195b3352d37
 gaussian_blur = round.(Kernel.gaussian(1), digits=3)
@@ -136,6 +150,25 @@ idkm = [-1 -1 -1; -1 9 -1; -1 -1 -1]
 
 # ╔═╡ 42f0f92e-1b13-4f23-a5c3-c20dfdf3fa26
 imfilter(dragons, OffsetArray(idkm, -1:1, -1:1))
+
+# ╔═╡ 22b62dff-ba3e-4752-8dff-1008540a6cdb
+md"""
+###### Image transformations
+
+Here are some transforming functions. (You are able to make your own function.)
+
+- linear combinations
+- rotate
+- shear
+- warp
+
+etc
+
+[Julia's  `∘` operator(composition)](https://docs.julialang.org/en/v1/manual/functions/#Function-composition-and-piping) 
+follows the [mathematical typography](https://en.wikipedia.org/wiki/Function_composition#Typography) convention, as was
+shown in the `sin ∘ cos` example above. We can type this symbol as `\circ<TAB>`.
+
+"""
 
 # ╔═╡ bc1373b7-b1ea-4c02-898c-7a9cba3644e2
 begin
@@ -191,6 +224,22 @@ begin
   # merc = ((x,y),) ->  [ log(x^2+y^2)/2 , atan(y,x) ] # (reim(log(complex(y,x)) ))
 end
 
+# ╔═╡ 884e538f-f030-418e-98c6-a3d69b8dd818
+# T⁻¹ = id
+#  T⁻¹ = rotate(α)
+#  T⁻¹ = shear(α)
+#   T⁻¹ = lin(A)
+#   T⁻¹ = shear(α) ∘ shear(-α) #this is equal to id.
+#  T⁻¹ = nonlin_shear(α)  
+#    T⁻¹ =   inverse(nonlin_shear(α))
+#    T⁻¹ =  nonlin_shear(-α)
+#  T⁻¹ =  xy 
+ T⁻¹ = warp(α)
+# T⁻¹ = ((x,y),)-> (x+α*y^2,y+α*x^2) # may be non-invertible
+
+# T⁻¹ = ((x,y),)-> (x,y^2)  
+# T⁻¹  = flipy ∘ ((x,y),) ->  ( (β*x - α*y)/(β - y)  , -h*y/ (β - y)   ) 
+
 # ╔═╡ 3d5be741-4cf6-4760-b857-ae7955ae288b
 begin
 	function transform_xy_to_ij(img::AbstractMatrix, x::Float64, y::Float64)
@@ -242,22 +291,6 @@ begin
 	    
 end
 
-# ╔═╡ 884e538f-f030-418e-98c6-a3d69b8dd818
-# T⁻¹ = id
-#  T⁻¹ = rotate(α)
-#  T⁻¹ = shear(α)
-#   T⁻¹ = lin(A) # uses the scrubbable 
-#   T⁻¹ = shear(α) ∘ shear(-α)
-#  T⁻¹ = nonlin_shear(α)  
-#    T⁻¹ =   inverse(nonlin_shear(α))
-#    T⁻¹ =  nonlin_shear(-α)
-#  T⁻¹ =  xy 
- T⁻¹ = warp(α)
-# T⁻¹ = ((x,y),)-> (x+α*y^2,y+α*x^2) # may be non-invertible
-
-# T⁻¹ = ((x,y),)-> (x,y^2)  
-# T⁻¹  = flipy ∘ ((x,y),) ->  ( (β*x - α*y)/(β - y)  , -h*y/ (β - y)   ) 
-
 # ╔═╡ b58460fc-e842-49dc-bb78-a265e7e41251
 begin
 		[			    
@@ -284,6 +317,14 @@ Sy, Sx = Kernel.sobel()
 
 # ╔═╡ 8e02a427-4595-4c2a-b42a-c381c79080b1
 (collect(Int.(8 .* Sx)), collect(Int.(8 .* Sy)))
+
+# ╔═╡ 921a01bf-6416-4fbb-abaf-946cb19e8d29
+md"""
+### Seam Carving
+
+The idea of **seam carving** is to shrink an image by removing the "least interesting" parts of the image, but *without* resizing the objects within the image. We want to remove the "dead space" within the image.
+
+"""
 
 # ╔═╡ 68d4a79c-2405-4337-aba2-804d1e2a321e
 	function show_colored_array(array)
@@ -475,6 +516,13 @@ least_e, dirs = least_edgy(edgeness(img))
 
 # ╔═╡ fbd26ff9-fa99-41cd-a671-6792fdfb32ee
 show_colored_array(least_e)
+
+# ╔═╡ 8d9c9b99-b405-4bb7-ad4d-20330421212b
+md"""
+#### Reference
+Some material on this website is based on:
+Computational Thinking, a live online Julia/Pluto textbook. (computationalthinking.mit.edu)
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1792,11 +1840,13 @@ version = "0.9.1+5"
 # ╠═96bdc7fc-c7db-49aa-be61-1672a577949e
 # ╠═91bfa0c0-eb1c-4e7f-b67e-ae42dd5a72f8
 # ╠═9ad2cd7b-afdd-4cf3-9d20-9be21e9a974c
+# ╟─f520720c-cfdf-4003-9bc6-5d1c6f7863d8
 # ╠═1033ad9f-6720-4e5b-b0dc-4e49f4e58d43
 # ╠═193473e2-f977-4d3c-bdc8-69db6a54844e
 # ╠═21743c4b-466c-4181-a11e-ce6cee3fa49b
 # ╠═fda2bdc1-84af-45e3-9bb1-310c791c698c
 # ╠═b5529ade-62f5-492a-91b8-5b10b4c9eb52
+# ╟─b58fdb86-34af-4d42-bc73-f4c0498aa3d6
 # ╠═e5d2a112-635c-4f76-a55a-3195b3352d37
 # ╠═e2aab6c0-eab5-4a64-b4f0-93595145adb4
 # ╠═74fd7029-b2f7-4c14-9fc2-90f1b9938783
@@ -1805,11 +1855,12 @@ version = "0.9.1+5"
 # ╠═4502e1bf-f36a-43f5-9b83-b4e55763c6aa
 # ╠═50982109-86d1-4e28-bfab-c36669e82a6a
 # ╠═42f0f92e-1b13-4f23-a5c3-c20dfdf3fa26
-# ╠═3d5be741-4cf6-4760-b857-ae7955ae288b
-# ╠═bc1373b7-b1ea-4c02-898c-7a9cba3644e2
+# ╟─22b62dff-ba3e-4752-8dff-1008540a6cdb
+# ╠═884e538f-f030-418e-98c6-a3d69b8dd818
+# ╟─3d5be741-4cf6-4760-b857-ae7955ae288b
+# ╟─bc1373b7-b1ea-4c02-898c-7a9cba3644e2
 # ╠═d1932e69-5e31-4ea9-88c6-780ccabdf2bc
 # ╠═b58460fc-e842-49dc-bb78-a265e7e41251
-# ╠═884e538f-f030-418e-98c6-a3d69b8dd818
 # ╠═78ea1f13-a9b1-435e-a173-29b7f2d5a940
 # ╠═29f5acb1-4dcc-4b97-bf10-d66fd34b4740
 # ╠═465ae4a5-2f6c-4a16-83bc-74bd58c896f8
@@ -1817,6 +1868,7 @@ version = "0.9.1+5"
 # ╠═adee2556-a696-48fe-9671-ba4d9a6757ac
 # ╠═2c99a42e-11f7-43fb-81d8-e8df006767eb
 # ╠═8e02a427-4595-4c2a-b42a-c381c79080b1
+# ╟─921a01bf-6416-4fbb-abaf-946cb19e8d29
 # ╟─68d4a79c-2405-4337-aba2-804d1e2a321e
 # ╟─a00de352-63e2-4f43-bfc3-aacc080e14a0
 # ╟─b424e77e-fddb-4c6e-870b-4315bfe7e1b2
@@ -1832,5 +1884,6 @@ version = "0.9.1+5"
 # ╠═7a826725-2741-44da-b451-28dee60628b4
 # ╠═e870d3cc-79ea-4ae6-b276-8f5cb5ea8c10
 # ╠═fbd26ff9-fa99-41cd-a671-6792fdfb32ee
+# ╟─8d9c9b99-b405-4bb7-ad4d-20330421212b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
