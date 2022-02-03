@@ -5,8 +5,11 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ c754e85e-84aa-11ec-2397-17f66c70480a
-# Load the distributions library.
-using Distributions, Random, Plots, Turing, MCMCChains, StatsPlots
+begin
+	# Load the distributions library.
+	using Distributions
+	using Random, Plots, Turing, MCMCChains, StatsPlots
+end
 
 # ╔═╡ 29ce3dff-80fe-4e26-bd02-0e45d1f5b871
 md"""
@@ -1272,9 +1275,9 @@ version = "0.2.17"
 
 [[Transducers]]
 deps = ["Adapt", "ArgCheck", "BangBang", "Baselet", "CompositionsBase", "DefineSingletons", "Distributed", "InitialValues", "Logging", "Markdown", "MicroCollections", "Requires", "Setfield", "SplittablesBase", "Tables"]
-git-tree-sha1 = "6378ddbd95d1da05ecc67e4f6de205a0732cb6e7"
+git-tree-sha1 = "1cda71cc967e3ef78aa2593319f6c7379376f752"
 uuid = "28d57a85-8fef-5791-bfe6-a80928e7c999"
-version = "0.4.71"
+version = "0.4.72"
 
 [[TreeViews]]
 deps = ["Test"]
