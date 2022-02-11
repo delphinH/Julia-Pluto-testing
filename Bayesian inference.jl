@@ -11,29 +11,53 @@ begin
 	using MLDataUtils: rescale!
 	using Plots, StatsPlots
 	using StatisticalRethinking
-	using RDatasets
 end
 
 # ╔═╡ eef1e512-8579-11ec-1837-0f04dc618fcb
 md"""
-### Bayesian inference workflow
+## Bayesian inference
 
-As you have seen in **Intro to turing.jl**, there are prior, likelihood, and posterior. These concepts are from bayesian statistics. You may have seen the famous Bayes' theorem.
+#### Bayes rule(theorem)
 
-$$P(\theta|X) = \frac{P(X|\theta) P(\theta)}{P(X)}$$
+$$P(\theta|D, m) = \frac{P(D|\theta, m) P(\theta|m)}{P(D|m)}$$
 
-where:
--  $\theta$ -- parameters of interest
--  $X$ -- observed data
--  $P(\theta|X)$ is called **Posterior**.
--  $P(X|\theta)$ is called **Likelihood**.
--  $P(\theta)$ is called **Prior**
--  $P(X)$ is **normalizing constant** so that numerator can be somewhere between 0 and 1.
+-  $P(\theta|D, m)$ ` `` ` **Posterior** of $\theta$ given data D
+-  $P(D|\theta, m)$ ` `` ` **Likelihood** of parameters $\theta$ in model m
+-  $P(\theta|m)$ ` ` ` ` **Prior** probability of $\theta$
+-  $P(D|m)$ ` `` `**Marginal likelihood** equal to $\int P(D|\theta, m)P(\theta|m)\,\mathrm{d}\theta$
 
-The workflow goes like this
-1. Build a model with informative priors on parameters
-2. Sample from the posterior distribution with sampler
-3. Check diagnostics
+
+###### Prediction : $P(x|D, m) = \int P(x|\theta, D, m)\,P(\theta|D, m)\, \mathrm{d}\theta$
+#### 
+##### Two simple rule
+####
+**Sum rule**: $$P(x) = \displaystyle\sum_{y} P(x, y)$$
+
+**Produt rule**: $$P(x, y) = P(y|x)P(x)$$
+#
+Bayesian approach is very natural way of logical thinking which is flexible and permissive. Furthermore it can allow us to reflect the **uncertainty**.
+Bayes rule tell us how to do inference about hypotheses(belief) from data.
+
+Let me tell you a story
+
+`One night you are suddenly awakened by a bright light at your window. You jumped up from bed and look out to see a large object in the sky that can only be described as saucer shaped. You are generally a skeptic and have never believed in alien, but, completely perplexed by the scene outside, you find yourself thinking, Could this be a UFO?!`
+
+![ufo](https://c4.wallpaperflare.com/wallpaper/217/545/167/tv-show-rick-and-morty-ufo-wallpaper-preview.jpg)
+
+`As you look toward the bright light outside, you notice more lights in the area. You also see that the large saucer-shaped object is held up by wires, and notice a camera crew. You hear a loud clap and someone call out "Cut!"`
+
+![film](https://res.cloudinary.com/twenty20/private_images/t_standard-fit/photosp/0b6f5e3b-56be-41cd-84c4-a19a5d23134a/stock-photo-outdoor-behind-the-scenes-video-production-film-production-shooting-video-movie-film-b-roll-film-studio-set-film-industrial-0b6f5e3b-56be-41cd-84c4-a19a5d23134a.jpg)
+
+You have, very likely, instantly changed your mind(**update your belief**) about what you think is happening in this second paragraph. Bayesian reasoning tends to be happen so quickly that you don't have any time to analyze your own thinking.
+
+###### Learning model structure
+You may wonder what is m in that bayes rule. you can consider m as so called *hyperparameter* of models. For example, when you meet clustering problems with k-means or mixture model, 'how many clusters in the data?' or 'what is the intrinsic dimensionality of the data?' in PCA. Futhermore, model selection is related to well-known *overfitting*.
+
+###### Priors and Marginal likelihood
+Priors can be subjective and there is no right prior. It can be very generous and non-informative prior like Uniform distribution or it can reflect our domain knowledge and belief into the model. For instance, there is no such thing like negative variance so that we set our prior to be lognormal or beta distribution. Prior is not the key factor of bayesian modeling, but informative prior can be useful if we set the reasonable one.
+
+Marginal likelihood is interpreted in information field as $\log_2(\frac{1}{P(D|m)})$ , which is the number of bits of surprise at observing data D under the model m. The problem is this can be computationally intractable and often go very high dimension. That's why we use approximation methods like MCMC and Variational bayesian(inference).
+These approximation methods are certainly the paramount subject to bayesian community.
 
 """
 
@@ -61,7 +85,8 @@ temp
 # ╔═╡ 9d556aef-e773-4f8d-b220-4f0de53d5c41
 begin
 	# Import the "Default" dataset.
-	data = RDatasets.dataset("Ecdat", "icecream");
+	url = "https://raw.githubusercontent.com/delphinH/imagetoy/main/dataset/Icecream.csv"
+	data = CSV.read(HTTP.get(url).body, DataFrame)
 	
 	# Show the first six rows of the dataset.
 	first(data, 6)
@@ -81,17 +106,22 @@ begin
 	ys = data[:, :Cons]
 end
 
+# ╔═╡ f57e4624-d679-4866-b95d-f0b2bc4436e0
+gr()
+
 # ╔═╡ d9e79634-8d9f-460a-bd1e-e3471dc82bcd
-p=scatter(Xs, ys, color = :teal, legend=false)
+p=scatter(Xs, ys, color = :teal, legend=false, fmt = "png") # scatter plot of data
 
 # ╔═╡ 9ad28f14-1545-4141-a192-6d3adc1b4f48
+#define linear model with priors
 @model function lin_reg(x, y)
-
+	#priors
 	α ~ Normal(mean(y), 10)
 	β ~ Normal(0, 1)
 	σ ~ Exponential(1)
 
 	μ = α .+ β * (x .- mean(x))
+	
 	y ~ MvNormal(μ, σ)
 end
 	
@@ -100,7 +130,7 @@ end
 model = lin_reg(Xs, ys)
 
 # ╔═╡ 22e0b5a2-663a-49eb-a4f6-fa36353186fc
-chain = sample(model, NUTS(), MCMCThreads(), 1000, 2)
+chain = sample(model, NUTS(), MCMCThreads(), 1000, 2) #approximation sampling
 
 # ╔═╡ 11c077f4-5294-4d26-98fa-a35e3e8116f1
 plot(chain)
@@ -131,11 +161,12 @@ begin
 end
 
 # ╔═╡ e0084ff1-0443-418d-a36a-fd67d0c61659
-W_data = mu .+ sde
+W_data = mu .+ sde #generate data given posterior
 
 # ╔═╡ 16285a48-97b4-4bcf-b69a-40d4d8e3d575
 begin
-	scatter(Xs, ys, color = :teal, legend=false)
+	#compare with observed and generated data
+	scatter(Xs, ys, color = :teal, legend=false, fmt = "png")
 	scatter!(L_data, W_data)
 end
 
@@ -149,7 +180,6 @@ HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 MCMCChains = "c7f686f2-ff18-58e9-bc7b-31028e88f75d"
 MLDataUtils = "cc2ba9b6-d476-5e6d-8eaf-a92d5412d41d"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-RDatasets = "ce6b1742-4840-55fa-b093-852dadbb1d8b"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StatisticalRethinking = "2d09df54-9d0f-5258-8220-54c2a3d4fbee"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
@@ -163,7 +193,6 @@ HTTP = "~0.9.17"
 MCMCChains = "~5.0.3"
 MLDataUtils = "~0.5.4"
 Plots = "~1.25.7"
-RDatasets = "~0.7.7"
 StatisticalRethinking = "~4.5.0"
 StatsPlots = "~0.14.31"
 Turing = "~0.20.0"
@@ -327,12 +356,6 @@ deps = ["Artifacts", "Bzip2_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll",
 git-tree-sha1 = "4b859a208b2397a7a623a03449e4636bdb17bcf2"
 uuid = "83423d85-b0ee-5818-9007-b63ccbeb887a"
 version = "1.16.1+1"
-
-[[CategoricalArrays]]
-deps = ["DataAPI", "Future", "Missings", "Printf", "Requires", "Statistics", "Unicode"]
-git-tree-sha1 = "c308f209870fdbd84cb20332b6dfaf14bf3387f8"
-uuid = "324d7699-5711-5eae-9e2f-1d82baa6b597"
-version = "0.10.2"
 
 [[ChainRules]]
 deps = ["ChainRulesCore", "Compat", "IrrationalConstants", "LinearAlgebra", "Random", "RealDot", "SparseArrays", "Statistics"]
@@ -569,11 +592,6 @@ git-tree-sha1 = "ae13fcbc7ab8f16b0856729b050ef0c446aa3492"
 uuid = "2e619515-83b5-522b-bb60-26c02a35a201"
 version = "2.4.4+0"
 
-[[ExprTools]]
-git-tree-sha1 = "56559bbef6ca5ea0c0818fa5c90320398a6fbf8d"
-uuid = "e2ba6199-217a-4e67-a87a-7c52f15ade04"
-version = "0.1.8"
-
 [[FFMPEG]]
 deps = ["FFMPEG_jll"]
 git-tree-sha1 = "b57e3acbe22f8484b4b5ff66a7499717fe1a9cc8"
@@ -597,12 +615,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "c6033cc3892d0ef5bb9cd29b7f2f0331ea5184ea"
 uuid = "f5851436-0d7a-5f13-b9de-f02708fd171a"
 version = "3.3.10+0"
-
-[[FileIO]]
-deps = ["Pkg", "Requires", "UUIDs"]
-git-tree-sha1 = "67551df041955cc6ee2ed098718c8fcd7fc7aebe"
-uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
-version = "1.12.0"
 
 [[FilePathsBase]]
 deps = ["Compat", "Dates", "Mmap", "Printf", "Test", "UUIDs"]
@@ -1102,12 +1114,6 @@ version = "1.0.2"
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
-[[Mocking]]
-deps = ["Compat", "ExprTools"]
-git-tree-sha1 = "29714d0a7a8083bba8427a4fbfb00a540c681ce7"
-uuid = "78c3b35d-d492-501b-9361-3d52fe80e533"
-version = "0.7.3"
-
 [[MonteCarloMeasurements]]
 deps = ["Distributed", "Distributions", "LinearAlgebra", "MacroTools", "Random", "RecipesBase", "Requires", "SLEEFPirates", "StaticArrays", "Statistics", "StatsBase", "Test"]
 git-tree-sha1 = "a438746036111a49ba2cb435681aeef0f1d8e9bc"
@@ -1340,18 +1346,6 @@ deps = ["DataStructures", "LinearAlgebra"]
 git-tree-sha1 = "78aadffb3efd2155af139781b8a8df1ef279ea39"
 uuid = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
 version = "2.4.2"
-
-[[RData]]
-deps = ["CategoricalArrays", "CodecZlib", "DataFrames", "Dates", "FileIO", "Requires", "TimeZones", "Unicode"]
-git-tree-sha1 = "19e47a495dfb7240eb44dc6971d660f7e4244a72"
-uuid = "df47a6cb-8c03-5eed-afd8-b6050d6c41da"
-version = "0.8.3"
-
-[[RDatasets]]
-deps = ["CSV", "CodecZlib", "DataFrames", "FileIO", "Printf", "RData", "Reexport"]
-git-tree-sha1 = "2720e6f6afb3e562ccb70a6b62f8f308ff810333"
-uuid = "ce6b1742-4840-55fa-b093-852dadbb1d8b"
-version = "0.7.7"
 
 [[REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
@@ -1631,12 +1625,6 @@ version = "0.1.5"
 [[Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[[TimeZones]]
-deps = ["Dates", "Downloads", "InlineStrings", "LazyArtifacts", "Mocking", "Printf", "RecipesBase", "Serialization", "Unicode"]
-git-tree-sha1 = "0f1017f68dc25f1a0cb99f4988f78fe4f2e7955f"
-uuid = "f269a46b-ccf7-5d73-abea-4c690281aa53"
-version = "1.7.1"
 
 [[Tracker]]
 deps = ["Adapt", "DiffRules", "ForwardDiff", "LinearAlgebra", "LogExpFunctions", "MacroTools", "NNlib", "NaNMath", "Printf", "Random", "Requires", "SpecialFunctions", "Statistics"]
@@ -1944,7 +1932,7 @@ version = "0.9.1+5"
 """
 
 # ╔═╡ Cell order:
-# ╠═e1b18f33-19ba-4fb3-a476-47cfeb6345af
+# ╟─e1b18f33-19ba-4fb3-a476-47cfeb6345af
 # ╟─eef1e512-8579-11ec-1837-0f04dc618fcb
 # ╟─3b7e0e99-5e48-4141-ac36-d855ba7aa0bf
 # ╟─edec49f8-576f-470a-bcae-2040a688e987
@@ -1952,6 +1940,7 @@ version = "0.9.1+5"
 # ╠═d36eab23-6ae5-4e54-be78-8901839bbc49
 # ╠═4f7b0614-729f-4745-9f1a-e3eb255ea7cc
 # ╠═7c307991-87d0-4a85-a3fc-26ed21ae319d
+# ╟─f57e4624-d679-4866-b95d-f0b2bc4436e0
 # ╠═d9e79634-8d9f-460a-bd1e-e3471dc82bcd
 # ╠═9ad28f14-1545-4141-a192-6d3adc1b4f48
 # ╠═19954116-525f-4caa-b66d-748dd581bfaa
