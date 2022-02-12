@@ -170,6 +170,14 @@ begin
 	scatter!(L_data, W_data)
 end
 
+# ╔═╡ 5cea4149-3003-4716-8db8-fb684f8db7c4
+md"""
+###### Reference
+Zoubin Ghahramani: MLSS 2015 Tubingen
+
+Will Kurt: Bayesian statistics the fun way
+"""
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -1953,5 +1961,6 @@ version = "0.9.1+5"
 # ╠═a0862af8-39c9-426b-a979-3ea1af8ed579
 # ╠═e0084ff1-0443-418d-a36a-fd67d0c61659
 # ╠═16285a48-97b4-4bcf-b69a-40d4d8e3d575
+# ╟─5cea4149-3003-4716-8db8-fb684f8db7c4
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
